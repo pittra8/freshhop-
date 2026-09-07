@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreshHop — Shop & book a delivery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#1F4D3A;
+    --forest-dark:#173A2B;
+    --leaf:#4C8C6B;
+    --marigold:#E8A33D;
+    --paper:#FAF7F0;
+    --paper-warm:#F3EEE1;
+    --ink:#20281F;
+    --muted:#7C8073;
+    --line:#DDD5C4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Work Sans', Helvetica, Arial, sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding:20px 32px;
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .logo{ font-family:'Fraunces', serif; font-weight:700; font-size:24px; color:var(--forest); }
+  .logo .hop{ color:var(--marigold); }
+
+  .steps-indicator{ display:flex; gap:8px; align-items:center; font-size:13.5px; font-weight:600; color:var(--muted); }
+  .steps-indicator .step.active{ color:var(--forest); }
+  .steps-indicator .sep{ color:var(--line); }
+
+  .cart-chip{
+    display:flex; align-items:center; gap:8px; background:var(--paper-warm); border:1.5px solid var(--line);
+    padding:9px 14px; border-radius:100px; font-weight:700; font-size:14px; color:var(--forest);
+  }
+  .cart-chip .dot{ width:7px; height:7px; border-radius:50%; background:var(--marigold); }
+
+  main{ flex:1; display:flex; justify-content:center; padding:40px 20px 140px; }
+  .card{
+    background:white; border-radius:24px; box-shadow:0 24px 60px -30px rgba(31,77,58,0.25);
+    width:100%; max-width:640px; padding:36px 40px;
+  }
+  h1{ font-family:'Fraunces', serif; font-weight:700; font-size:28px; color:var(--forest); margin-bottom:6px; }
+  .subtitle{ color:var(--muted); font-size:15px; margin-bottom:28px; }
+
+  /* ===== SHOP VIEW ===== */
+  .cat-block{ margin-bottom:30px; }
+  .cat-title{
+    font-family:'Fraunces', serif; font-weight:700; font-size:17px; color:var(--forest);
+    margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--line);
+  }
+  .item-row{
+    display:flex; align-items:center; gap:14px; padding:12px 0;
+  }
+  .item-swatch{ width:42px; height:42px; border-radius:12px; flex-shrink:0; }
+  .item-info{ flex:1; }
+  .item-name{ font-weight:600; font-size:15px; color:var(--ink); }
+  .item-meta{ font-size:13px; color:var(--muted); margin-top:1px; }
+  .item-price{ font-weight:700; font-size:14.5px; color:var(--forest); min-width:56px; text-align:right; }
+
+  .stepper{ display:flex; align-items:center; gap:10px; min-width:96px; justify-content:flex-end; }
+  .stepper button{
+    width:30px; height:30px; border-radius:50%; border:1.5px solid var(--line); background:var(--paper-warm);
+    font-size:16px; font-weight:700; color:var(--forest); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease;
+  }
+  .stepper button:hover{ border-color:var(--leaf); }
+  .stepper button.add-btn{ background:var(--forest); color:var(--paper); border-color:var(--forest); width:auto; padding:0 14px; border-radius:100px; font-size:13.5px; }
+  .stepper .qty{ font-weight:700; font-size:15px; min-width:16px; text-align:center; }
+
+  /* ===== BOOKING VIEW ===== */
+  .back-link{ font-size:13.5px; font-weight:600; color:var(--leaf); cursor:pointer; margin-bottom:18px; display:inline-block; }
+
+  .mode-toggle{ display:flex; background:var(--paper-warm); border-radius:100px; padding:4px; margin-bottom:28px; }
+  .mode-btn{ flex:1; text-align:center; padding:11px; border-radius:100px; font-weight:600; font-size:14.5px; color:var(--muted); cursor:pointer; transition:all .15s ease; user-select:none; }
+  .mode-btn.active{ background:var(--forest); color:var(--paper); }
+
+  label{ display:block; font-size:13px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  .field{ margin-bottom:26px; }
+  input[type="text"]{
+    width:100%; padding:14px 16px; border:1.5px solid var(--line); border-radius:12px;
+    font-family:'Work Sans', sans-serif; font-size:15.5px; color:var(--ink); background:var(--paper-warm); outline:none; transition:border-color .15s ease;
+  }
+  input[type="text"]:focus{ border-color:var(--leaf); }
+
+  .store-row{ display:flex; flex-direction:column; gap:10px; }
+  .store-option{ padding:14px 16px; border-radius:12px; border:1.5px solid var(--line); background:var(--paper-warm); cursor:pointer; transition:all .15s ease; }
+  .store-option:hover{ border-color:var(--leaf); }
+  .store-option.selected{ border-color:var(--forest); background:#E7F1EA; }
+  .store-option .name{ font-weight:700; font-size:15px; color:var(--forest); }
+  .store-option .addr{ font-size:13px; color:var(--muted); margin-top:2px; }
+
+  .day-row{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+  .day-pill{ flex:0 0 auto; padding:12px 16px; border-radius:14px; border:1.5px solid var(--line); background:var(--paper-warm); cursor:pointer; text-align:center; min-width:64px; transition:all .15s ease; }
+  .day-pill .dow{ font-size:11.5px; color:var(--muted); font-weight:600; text-transform:uppercase; }
+  .day-pill .num{ font-family:'Fraunces', serif; font-weight:700; font-size:19px; color:var(--forest); margin-top:2px; }
+  .day-pill.selected{ background:var(--forest); border-color:var(--forest); }
+  .day-pill.selected .dow{ color:rgba(250,247,240,0.65); }
+  .day-pill.selected .num{ color:var(--paper); }
+
+  .slot-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .slot{ padding:13px 14px; border-radius:12px; border:1.5px solid var(--line); background:var(--paper-warm); cursor:pointer; font-size:14.5px; font-weight:600; color:var(--ink); display:flex; justify-content:space-between; align-items:center; transition:all .15s ease; }
+  .slot:hover:not(.disabled){ border-color:var(--leaf); transform:translateY(-2px); }
+  .slot.selected{ background:var(--forest); border-color:var(--forest); color:var(--paper); }
+  .slot .tag{ font-size:11.5px; font-weight:700; color:var(--leaf); }
+  .slot.selected .tag{ color:var(--marigold); }
+  .slot.disabled{ opacity:0.4; cursor:not-allowed; text-decoration:line-through; }
+
+  .btn-primary{ width:100%; margin-top:20px; padding:16px; border:none; border-radius:100px; background:var(--forest); color:var(--paper); font-family:'Work Sans', sans-serif; font-weight:700; font-size:16px; cursor:pointer; transition:transform .15s ease, background .15s ease; }
+  .btn-primary:hover:not(:disabled){ transform:translateY(-3px); background:var(--forest-dark); }
+  .btn-primary:disabled{ opacity:0.45; cursor:not-allowed; }
+
+  /* ===== CART SUMMARY BAR ===== */
+  .cart-bar{
+    position:fixed; bottom:0; left:0; right:0; background:white; border-top:1px solid var(--line);
+    box-shadow:0 -12px 30px -20px rgba(31,77,58,0.3); padding:16px 20px; display:flex; justify-content:center;
+  }
+  .cart-bar-inner{ width:100%; max-width:640px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  .cart-summary-text{ font-size:14.5px; color:var(--muted); }
+  .cart-summary-text b{ color:var(--forest); }
+  .cart-bar .btn-primary{ width:auto; margin:0; padding:14px 28px; }
+
+  /* ===== CONFIRM VIEW ===== */
+  .confirm{ text-align:center; padding:20px 0; }
+  .confirm .check{ width:64px; height:64px; border-radius:50%; background:var(--leaf); margin:0 auto 20px; display:flex; align-items:center; justify-content:center; }
+  .confirm .check svg{ width:28px; height:28px; }
+  .confirm h2{ font-family:'Fraunces', serif; font-weight:700; font-size:24px; color:var(--forest); margin-bottom:8px; }
+  .confirm p{ color:var(--muted); font-size:15px; margin-bottom:4px; }
+  .confirm .details{ font-weight:700; color:var(--forest); }
+  .order-lines{ text-align:left; background:var(--paper-warm); border-radius:14px; padding:16px 18px; margin:20px 0; }
+  .order-line{ display:flex; justify-content:space-between; font-size:14.5px; padding:4px 0; color:var(--ink); }
+  .order-line.total{ border-top:1px solid var(--line); margin-top:8px; padding-top:10px; font-weight:700; color:var(--forest); }
+  .confirm button.text-btn{ margin-top:10px; background:none; border:none; color:var(--leaf); font-weight:600; font-size:14.5px; cursor:pointer; text-decoration:underline; }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fresh<span class="hop">Hop</span></div>
+  <div id="header-right"></div>
+</header>
+
+<main>
+  <div class="card">
+
+    <!-- ============ SHOP VIEW ============ -->
+    <div id="shop-view">
+      <h1>Shop</h1>
+      <p class="subtitle">Add what you need — you'll pick a time next.</p>
+      <div id="categories"></div>
+    </div>
+
+    <!-- ============ BOOKING VIEW ============ -->
+    <div id="booking-view" class="hidden">
+      <span class="back-link" id="back-to-shop">← Back to shop</span>
+      <h1 id="page-title">Book a delivery time</h1>
+      <p class="subtitle" id="page-subtitle">Pick a day and a slot that works — we'll do the rest.</p>
+
+      <div class="mode-toggle">
+        <div class="mode-btn active" id="mode-delivery">Delivery</div>
+        <div class="mode-btn" id="mode-pickup">Pickup</div>
+      </div>
+
+      <div class="field" id="address-field">
+        <label for="address">Delivery address</label>
+        <input type="text" id="address" placeholder="123 Orchard St, Apt 4B">
+      </div>
+
+      <div class="field hidden" id="store-field">
+        <label>Pickup location</label>
+        <div class="store-row" id="store-row"></div>
+      </div>
+
+      <div class="field">
+        <label id="day-label">Day</label>
+        <div class="day-row" id="day-row"></div>
+      </div>
+
+      <div class="field">
+        <label id="slot-label">Available times</label>
+        <div class="slot-grid" id="slot-grid"></div>
+      </div>
+
+      <button class="btn-primary" id="confirm-btn" disabled>Place order</button>
+    </div>
+
+    <!-- ============ CONFIRM VIEW ============ -->
+    <div id="confirm-view" class="confirm hidden">
+      <div class="check">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#FAF7F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>You're all set</h2>
+      <p id="confirm-label">Delivery scheduled for</p>
+      <p class="details" id="confirm-details"></p>
+
+      <div class="order-lines" id="order-lines"></div>
+
+      <p id="confirm-note">We'll text you when your courier is on the way.</p>
+      <button class="text-btn" id="edit-btn">Start a new order</button>
+    </div>
+
+  </div>
+</main>
+
+<!-- Sticky cart bar, shown only on the shop view -->
+<div class="cart-bar" id="cart-bar">
+  <div class="cart-bar-inner">
+    <div class="cart-summary-text" id="cart-summary-text">Your cart is empty</div>
+    <button class="btn-primary" id="continue-btn" disabled>Continue to schedule</button>
+  </div>
+</div>
+
+<script>
+  /* ---------- Supabase connection ---------- */
+  const SUPABASE_URL = 'https://samjaswvvtcmldatyncs.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_99AcR94KP4IyXFlVKAtlmw_O6IFL1_y';
+  const sbHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+  async function sbGet(path) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: sbHeaders });
+    if (!res.ok) throw new Error(`Failed to load ${path}`);
+    return res.json();
+  }
+
+  /* ---------- Live data (populated on load) ---------- */
+  let categories = [];   // [{ name, items: [{id,name,meta,price,color}] }]
+  let stores = [];       // [{ id, name, addr }]
+  let slotsByDate = {};  // { 'delivery': { 'YYYY-MM-DD': [{id,label,tag}] }, 'pickup': { storeId: { date: [...] } } }
+  let rawTimeSlots = []; // full rows, kept for id lookups
+
+  async function loadCatalog() {
+    const [catRows, prodRows, storeRows, slotRows] = await Promise.all([
+      sbGet('categories?select=*&order=sort_order'),
+      sbGet('products?select=*&in_stock=eq.true'),
+      sbGet('stores?select=*'),
+      sbGet('time_slots?select=*&order=slot_date'),
+    ]);
+
+    categories = catRows.map(c => ({
+      name: c.name,
+      items: prodRows
+        .filter(p => p.category_id === c.id)
+        .map(p => ({ id: p.id, name: p.name, meta: p.meta, price: Number(p.price), color: p.color })),
+    }));
+
+    stores = storeRows.map(s => ({ id: s.id, name: s.name, addr: s.address }));
+
+    rawTimeSlots = slotRows;
+  }
+
+  const cart = {}; // id -> qty
+
+  function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+  function cartTotal(){
+    let total = 0;
+    categories.forEach(c => c.items.forEach(it => { if (cart[it.id]) total += cart[it.id]*it.price; }));
+    return total;
+  }
+  function findItem(id){
+    for (const c of categories) { const it = c.items.find(i=>i.id===id); if (it) return it; }
+  }
+
+  function renderCategories(){
+    const wrap = document.getElementById('categories');
+    wrap.innerHTML = '';
+    categories.forEach(cat => {
+      const block = document.createElement('div');
+      block.className = 'cat-block';
+      block.innerHTML = `<div class="cat-title">${cat.name}</div>`;
+      cat.items.forEach(it => {
+        const qty = cart[it.id] || 0;
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+          <div class="item-swatch" style="background:${it.color}"></div>
+          <div class="item-info">
+            <div class="item-name">${it.name}</div>
+            <div class="item-meta">${it.meta}</div>
+          </div>
+          <div class="item-price">$${it.price.toFixed(2)}</div>
+          <div class="stepper" data-id="${it.id}"></div>
+        `;
+        block.appendChild(row);
+        renderStepper(row.querySelector('.stepper'), it.id, qty);
+      });
+      wrap.appendChild(block);
+    });
+    updateCartBar();
+  }
+
+  function renderStepper(el, id, qty){
+    if (qty === 0) {
+      el.innerHTML = `<button class="add-btn">Add</button>`;
+      el.querySelector('.add-btn').onclick = () => { cart[id] = 1; renderCategories(); };
+    } else {
+      el.innerHTML = `<button class="minus">−</button><span class="qty">${qty}</span><button class="plus">+</button>`;
+      el.querySelector('.minus').onclick = () => { cart[id] = Math.max(0, qty-1); if(cart[id]===0) delete cart[id]; renderCategories(); };
+      el.querySelector('.plus').onclick = () => { cart[id] = qty+1; renderCategories(); };
+    }
+  }
+
+  function updateCartBar(){
+    const count = cartCount();
+    const total = cartTotal();
+    const summaryEl = document.getElementById('cart-summary-text');
+    const continueBtn = document.getElementById('continue-btn');
+    if (count === 0) {
+      summaryEl.textContent = 'Your cart is empty';
+      continueBtn.disabled = true;
+    } else {
+      summaryEl.innerHTML = `<b>${count}</b> item${count>1?'s':''} · <b>$${total.toFixed(2)}</b>`;
+      continueBtn.disabled = false;
+    }
+  }
+
+  /* ---------- View switching ---------- */
+  const shopView = document.getElementById('shop-view');
+  const bookingView = document.getElementById('booking-view');
+  const confirmView = document.getElementById('confirm-view');
+  const cartBar = document.getElementById('cart-bar');
+
+  document.getElementById('continue-btn').addEventListener('click', () => {
+    shopView.classList.add('hidden');
+    cartBar.classList.add('hidden');
+    bookingView.classList.remove('hidden');
+    updateButton();
+  });
+  document.getElementById('back-to-shop').addEventListener('click', () => {
+    bookingView.classList.add('hidden');
+    shopView.classList.remove('hidden');
+    cartBar.classList.remove('hidden');
+  });
+
+  /* ---------- Scheduling (delivery / pickup) ---------- */
+  const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let mode = 'delivery';
+  let selectedDayIdx = 0;
+  let selectedSlot = null;      // holds the time_slot id (uuid), not an index
+  let selectedStore = 0;        // index into `stores`
+
+  function uniqueDates() {
+    const relevant = rawTimeSlots.filter(s => s.mode === mode && (mode === 'delivery' || s.store_id === stores[selectedStore]?.id));
+    const dates = [...new Set(relevant.map(s => s.slot_date))].sort();
+    return dates;
+  }
+
+  function slotsForSelectedDay() {
+    const dates = uniqueDates();
+    const date = dates[selectedDayIdx];
+    return rawTimeSlots
+      .filter(s => s.mode === mode && s.slot_date === date && (mode === 'delivery' || s.store_id === stores[selectedStore]?.id))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map(s => ({ id: s.id, label: s.label, tag: s.tag, disabled: s.booked_count >= s.capacity }));
+  }
+
+  const dayRow = document.getElementById('day-row');
+  const slotGrid = document.getElementById('slot-grid');
+  const storeRow = document.getElementById('store-row');
+  const confirmBtn = document.getElementById('confirm-btn');
+  const addressInput = document.getElementById('address');
+  const modeDelivery = document.getElementById('mode-delivery');
+  const modePickup = document.getElementById('mode-pickup');
+  const addressField = document.getElementById('address-field');
+  const storeField = document.getElementById('store-field');
+
+  function dateLabel(dateStr, idx) {
+    if (idx === 0) return 'Today';
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${dowNames[d.getDay()]}, ${d.toLocaleString('default', { month: 'long' })} ${d.getDate()}`;
+  }
+
+  function renderDays(){
+    dayRow.innerHTML = '';
+    const dates = uniqueDates();
+    dates.forEach((dateStr, i) => {
+      const d = new Date(dateStr + 'T00:00:00');
+      const pill = document.createElement('div');
+      pill.className = 'day-pill' + (i===selectedDayIdx ? ' selected' : '');
+      pill.innerHTML = `<div class="dow">${i===0?'Today':dowNames[d.getDay()]}</div><div class="num">${d.getDate()}</div>`;
+      pill.onclick = () => { selectedDayIdx = i; selectedSlot = null; renderDays(); renderSlots(); updateButton(); };
+      dayRow.appendChild(pill);
+    });
+  }
+
+  function renderSlots(){
+    slotGrid.innerHTML = '';
+    const slots = slotsForSelectedDay();
+    if (slots.length === 0) {
+      slotGrid.innerHTML = `<div style="grid-column:1/-1; color:var(--muted); font-size:14px;">No times available for this day.</div>`;
+      return;
+    }
+    slots.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'slot' + (t.disabled?' disabled':'') + (selectedSlot===t.id?' selected':'');
+      el.innerHTML = `<span>${t.label}</span>${t.tag?`<span class="tag">${t.tag}</span>`:''}`;
+      if (!t.disabled) el.onclick = () => { selectedSlot = t.id; renderSlots(); updateButton(); };
+      slotGrid.appendChild(el);
+    });
+  }
+
+  function renderStores(){
+    storeRow.innerHTML = '';
+    stores.forEach((s,i) => {
+      const el = document.createElement('div');
+      el.className = 'store-option' + (selectedStore===i?' selected':'');
+      el.innerHTML = `<div class="name">${s.name}</div><div class="addr">${s.addr}</div>`;
+      el.onclick = () => { selectedStore = i; selectedDayIdx = 0; selectedSlot = null; renderStores(); renderDays(); renderSlots(); updateButton(); };
+      storeRow.appendChild(el);
+    });
+  }
+
+  function setMode(newMode){
+    mode = newMode;
+    const isPickup = mode === 'pickup';
+    modeDelivery.classList.toggle('active', !isPickup);
+    modePickup.classList.toggle('active', isPickup);
+    addressField.classList.toggle('hidden', isPickup);
+    storeField.classList.toggle('hidden', !isPickup);
+
+    document.getElementById('page-title').textContent = isPickup ? 'Book a pickup time' : 'Book a delivery time';
+    document.getElementById('page-subtitle').textContent = isPickup
+      ? 'Pick a store, day, and time — your order will be ready and waiting.'
+      : "Pick a day and a slot that works — we'll do the rest.";
+    document.getElementById('day-label').textContent = isPickup ? 'Pickup day' : 'Day';
+    document.getElementById('slot-label').textContent = isPickup ? 'Available pickup times' : 'Available times';
+    confirmBtn.textContent = 'Place order';
+
+    selectedDayIdx = 0;
+    selectedSlot = null;
+    renderDays();
+    renderSlots();
+    updateButton();
+  }
+  modeDelivery.addEventListener('click', () => setMode('delivery'));
+  modePickup.addEventListener('click', () => setMode('pickup'));
+
+  function updateButton(){
+    if (mode === 'pickup') confirmBtn.disabled = selectedSlot===null || selectedStore===null;
+    else confirmBtn.disabled = selectedSlot===null || addressInput.value.trim()==='';
+  }
+  addressInput.addEventListener('input', updateButton);
+
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Placing order…';
+
+    const isPickup = mode === 'pickup';
+    const items = Object.keys(cart).map(id => ({ productId: id, quantity: cart[id] }));
+    const payload = {
+      mode,
+      address: isPickup ? undefined : addressInput.value.trim(),
+      storeId: isPickup ? stores[selectedStore].id : undefined,
+      timeSlotId: selectedSlot,
+      items,
+    };
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/place-order`, {
+        method: 'POST',
+        headers: { ...sbHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Could not place order');
+
+      const dates = uniqueDates();
+      const dayLabel = dateLabel(dates[selectedDayIdx], selectedDayIdx);
+      const slotInfo = slotsForSelectedDay().find(s => s.id === selectedSlot);
+
+      document.getElementById('confirm-label').textContent = isPickup ? 'Pickup scheduled for' : 'Delivery scheduled for';
+      document.getElementById('confirm-details').textContent = isPickup
+        ? `${stores[selectedStore].name} · ${dayLabel} · ${slotInfo.label}`
+        : `${dayLabel} · ${slotInfo.label}`;
+      document.getElementById('confirm-note').textContent = isPickup
+        ? "We'll text you when your order is ready to grab."
+        : "We'll text you when your courier is on the way.";
+
+      const orderLines = document.getElementById('order-lines');
+      orderLines.innerHTML = '';
+      Object.keys(cart).forEach(id => {
+        const it = findItem(id);
+        const line = document.createElement('div');
+        line.className = 'order-line';
+        line.innerHTML = `<span>${cart[id]} × ${it.name}</span><span>$${(cart[id]*it.price).toFixed(2)}</span>`;
+        orderLines.appendChild(line);
+      });
+      const totalLine = document.createElement('div');
+      totalLine.className = 'order-line total';
+      totalLine.innerHTML = `<span>Total</span><span>$${result.total.toFixed(2)}</span>`;
+      orderLines.appendChild(totalLine);
+
+      bookingView.classList.add('hidden');
+      confirmView.classList.remove('hidden');
+    } catch (err) {
+      alert(err.message || 'Something went wrong placing your order. Please try a different time slot.');
+      // Slot may have filled up — refresh live data and re-render
+      await loadCatalog();
+      renderDays();
+      renderSlots();
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Place order';
+    }
+  });
+
+  document.getElementById('edit-btn').addEventListener('click', async () => {
+    Object.keys(cart).forEach(k => delete cart[k]);
+    selectedSlot = null;
+    confirmView.classList.add('hidden');
+    shopView.classList.remove('hidden');
+    cartBar.classList.remove('hidden');
+    await loadCatalog();
+    renderCategories();
+  });
+
+  (async function init(){
+    try {
+      await loadCatalog();
+      renderCategories();
+      renderDays();
+      renderSlots();
+      renderStores();
+    } catch (err) {
+      document.getElementById('categories').innerHTML =
+        `<p style="color:var(--muted);">Couldn't load the menu right now. Please refresh.</p>`;
+    }
+  })();
+</script>
+
+</body>
+</html>
