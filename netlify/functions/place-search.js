@@ -1,9 +1,11 @@
+// netlify/functions/place-search.js
+
 export default async (req, context) => {
   const url = new URL(req.url);
   const query = url.searchParams.get("query");
   const lat = url.searchParams.get("lat");
   const lng = url.searchParams.get("lng");
-  const radius = url.searchParams.get("radius") || 5000;
+  const radius = parseFloat(url.searchParams.get("radius")) || 5000;
 
   if (!query && !(lat && lng)) {
     return new Response(
@@ -20,21 +22,67 @@ export default async (req, context) => {
     );
   }
 
-  const apiUrl = query
-    ? `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`
-    : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=restaurant&key=${apiKey}`;
+  const apiUrl = "https://places.googleapis.com/v1/places:searchText";
+
+  const body = query
+    ? { textQuery: query }
+    : {
+        textQuery: "restaurants",
+        locationBias: {
+          circle: {
+            center: { latitude: parseFloat(lat), longitude: parseFloat(lng) },
+            radius: radius
+          }
+        }
+      };
 
   try {
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.id,places.location,places.currentOpeningHours.openNow"
+      },
+      body: JSON.stringify(body)
+    });
+
     const data = await response.json();
 
-    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+    if (!response.ok) {
       return new Response(
-        JSON.stringify({ error: `Google Places API error: ${data.status}`, details: data.error_message }),
+        JSON.stringify({ error: `Google Places API error`, details: data.error?.message || data }),
         { status: 502, headers: { "Content-Type": "application/json" } }
       );
     }
 
+    const results = (data.places || []).map((place) => ({
+      name: place.displayName?.text,
+      address: place.formattedAddress,
+      rating: place.rating,
+      userRatingsTotal: place.userRatingCount,
+      priceLevel: place.priceLevel,
+      placeId: place.id,
+      location: place.location,
+      openNow: place.currentOpeningHours?.openNow
+    }));
+
+    return new Response(JSON.stringify({ results }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch from Google Places API", details: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+};
+
+export const config = {
+  path: "/api/place-search"
+};
     const results = (data.results || []).map((place) => ({
       name: place.name,
       address: place.formatted_address || place.vicinity,
