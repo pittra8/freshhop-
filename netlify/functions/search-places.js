@@ -30,7 +30,11 @@ exports.handler = async function (event) {
   try {
     const overpassRes = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
-      body: query,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "FreshHopApp/1.0 (contact@freshhop.app)",
+      },
+      body: "data=" + encodeURIComponent(query),
     });
 
     if (!overpassRes.ok) {
