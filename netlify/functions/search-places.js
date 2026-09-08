@@ -38,4 +38,42 @@ exports.handler = async function (event) {
     });
 
     if (!overpassRes.ok) {
-      throw new Error(`O
+      throw new Error("Overpass API returned " + overpassRes.status);
+    }
+
+    const data = await overpassRes.json();
+
+    const results = data.elements
+      .map((el) => {
+        const placeLat = el.lat ?? (el.center && el.center.lat);
+        const placeLng = el.lon ?? (el.center && el.center.lon);
+        if (!placeLat || !placeLng) return null;
+
+        return {
+          name: (el.tags && el.tags.name) || "Unnamed",
+          address:
+            el.tags && el.tags["addr:street"]
+              ? ((el.tags["addr:housenumber"] || "") + " " + el.tags["addr:street"]).trim()
+              : null,
+          placeId: el.id,
+          location: { lat: placeLat, lng: placeLng },
+          category: (el.tags && (el.tags.amenity || el.tags.shop)) || null,
+          phone: (el.tags && (el.tags.phone || el.tags["contact:phone"])) || null,
+          website: (el.tags && (el.tags.website || el.tags["contact:website"])) || null,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ results: results }),
+    };
+  } catch (err) {
+    return {
+      statusCode: 502,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Failed to fetch places", details: err.message }),
+    };
+  }
+};
