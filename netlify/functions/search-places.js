@@ -28,7 +28,7 @@ exports.handler = async function (event) {
   `;
 
   try {
-const overpassRes = await fetch("https://overpass.kumi.systems/api/interpreter", {-api.de/api/interpreter", {
+    const overpassRes = await fetch("https://overpass.kumi.systems/api/interpreter", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
