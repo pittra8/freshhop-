@@ -42,3 +42,48 @@ exports.handler = async function (event) {
     }
 
     const data = await overpassRes.json();
+    const results = data.elements
+      .map((el) => {
+        const placeLat = el.lat ?? (el.center && el.center.lat);
+        const placeLng = el.lon ?? (el.center && el.center.lon);
+        if (!placeLat || !placeLng) return null;
+
+        const address = (() => {
+          if (!el.tags) return null;
+          if (el.tags["addr:full"]) return el.tags["addr:full"];
+          if (el.tags["addr:street"]) {
+            const parts = [
+              el.tags["addr:housenumber"],
+              el.tags["addr:street"],
+              el.tags["addr:city"],
+            ].filter(Boolean);
+            return parts.join(" ");
+          }
+          return null;
+        })();
+
+        return {
+          name: (el.tags && el.tags.name) || "Unnamed",
+          address: address,
+          placeId: el.id,
+          location: { lat: placeLat, lng: placeLng },
+          category: (el.tags && (el.tags.amenity || el.tags.shop)) || null,
+          phone: (el.tags && (el.tags.phone || el.tags["contact:phone"])) || null,
+          website: (el.tags && (el.tags.website || el.tags["contact:website"])) || null,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ results: results }),
+    };
+  } catch (err) {
+    return {
+      statusCode: 502,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Failed to fetch places", details: err.message }),
+    };
+  }
+};
