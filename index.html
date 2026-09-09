@@ -1,59 +1,73 @@
-<!-- Add this where you want the search feature to appear -->
-<div id="place-search-section">
-  <button id="find-places-btn">Find Local Restaurants & Stores</button>
-  <p id="place-search-status"></p>
-  <div id="place-results"></div>
-</div>
-
-<script>
-  document.getElementById('find-places-btn').addEventListener('click', async () => {
-    const statusEl = document.getElementById('place-search-status');
-    const resultsEl = document.getElementById('place-results');
-
-    statusEl.textContent = 'Searching nearby places...';
-    resultsEl.innerHTML = '';
-
-    try {
-      const res = await fetch('/.netlify/functions/search-places?lat=45.7809&lng=-122.5334&radius=5000');
-      const data = await res.json();
-
-      if (data.error) {
-        statusEl.textContent = 'Something went wrong: ' + data.error;
-        return;
-      }
-
-      const places = data.results || [];
-      statusEl.textContent = `Found ${places.length} places near Battle Ground.`;
-
-      resultsEl.innerHTML = places
-        .map(place => `
-          <div class="place-card">
-            <h3>${place.name}</h3>
-            <p>${place.address || 'Address not listed'}</p>
-            <p><em>${place.category || ''}</em></p>
-            ${place.phone ? `<p>📞 ${place.phone}</p>` : ''}
-            ${place.website ? `<p><a href="${place.website}" target="_blank">Website</a></p>` : ''}
-          </div>
-        `)
-        .join('');
-    } catch (err) {
-      statusEl.textContent = 'Failed to load places. Please try again.';
-    }
-  });
-</script>
-
 <style>
-  #place-results {
-    display: grid;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  .place-card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
+  #place-search-section {
+    font-family: -apple-system, system-ui, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
     padding: 1rem;
   }
+
+  #find-places-btn {
+    background-color: #2e7d4f;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  #find-places-btn:hover {
+    background-color: #256b42;
+  }
+
+  #place-search-status {
+    color: #555;
+    font-size: 0.95rem;
+    margin: 0.75rem 0;
+  }
+
+  #place-results {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .place-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1rem;
+    background: #fafafa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
   .place-card h3 {
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.35rem 0;
+    color: #1a1a1a;
+    font-size: 1.05rem;
+  }
+
+  .place-card p {
+    margin: 0.2rem 0;
+    color: #444;
+    font-size: 0.9rem;
+  }
+
+  .place-card em {
+    color: #2e7d4f;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+
+  .place-card a {
+    color: #2e7d4f;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .place-card a:hover {
+    text-decoration: underline;
   }
 </style>
