@@ -42,16 +42,3 @@ exports.handler = async function (event) {
     }
 
     const data = await overpassRes.json();
-
-    const results = data.elements
-      .map((el) => {
-        const placeLat = el.lat ?? (el.center && el.center.lat);
-        const placeLng = el.lon ?? (el.center && el.center.lon);
-        if (!placeLat || !placeLng) return null;
-
-        const address = (() => {
-          if (!el.tags) return null;
-          if (el.tags["addr:full"]) return el.tags["addr:full"];
-          if (el.tags["addr:street"]) {
-            const parts = [
-              el.tags["addr:housenumber"],
