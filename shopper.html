@@ -196,6 +196,7 @@
       </div>
     `;
     body.appendChild(totalsRow);
+    const totalEl = totalsRow.querySelector('.running-total');
 
     const overWarning = document.createElement('div');
     overWarning.className = 'over-warning';
@@ -204,6 +205,14 @@
     body.appendChild(overWarning);
 
     function recalcTotal(){
+      const total = calcTotalFromInputs();
+      totalEl.textContent = `$${total.toFixed(2)}`;
+      const over = order.budget_cap && total > Number(order.budget_cap);
+      totalEl.classList.toggle('over', over);
+      overWarning.style.display = over ? 'block' : 'none';
+      return total;
+    }
+    function calcTotalFromInputs(){
       let total = 0;
       itemsWrap.querySelectorAll('.item-price').forEach(inp => {
         const val = parseFloat(inp.value);
@@ -212,13 +221,9 @@
         const checked = itemsWrap.querySelector(`.item-check[data-item-id="${itemId}"]`).checked;
         if(!isNaN(val) && checked) total += val * item.quantity;
       });
-      const totalEl = document.getElementById(`total-${order.id}`);
-      totalEl.textContent = `$${total.toFixed(2)}`;
-      const over = order.budget_cap && total > Number(order.budget_cap);
-      totalEl.classList.toggle('over', over);
-      overWarning.style.display = over ? 'block' : 'none';
       return total;
     }
+
     itemsWrap.addEventListener('input', recalcTotal);
     itemsWrap.addEventListener('change', recalcTotal);
     recalcTotal();
