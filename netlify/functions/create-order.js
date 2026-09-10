@@ -9,9 +9,9 @@
 // Requires the "@supabase/supabase-js" package. Add it to package.json:
 //   npm install @supabase/supabase-js
 
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
-export default async (req, context) => {
+module.exports = async (req, context) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
