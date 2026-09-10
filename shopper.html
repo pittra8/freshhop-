@@ -143,7 +143,8 @@
       });
 
     } catch(err){
-      container.innerHTML = '<div class="empty">Could not load orders. Try refreshing.</div>';
+      const detail = (err && err.message ? err.message : String(err)) + (err && err.stack ? ' — ' + err.stack.split('\n')[1] : '');
+      container.innerHTML = `<div class="empty">Could not load orders.<br><small style="color:#b5502a">${escapeHtml(detail)}</small></div>`;
     }
   }
 
