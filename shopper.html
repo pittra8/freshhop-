@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FreshHop — Shopper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F5EF;
+    --leaf:#28503B;
+    --leaf-dark:#193226;
+    --citrus:#E8763A;
+    --ink:#1C211D;
+    --muted:#6E756E;
+    --line:#DAD5C6;
+    --card:#FFFFFF;
+    --radius:10px;
+    --warn-bg:#FBEAE3;
+    --warn-line:#F0C4AE;
+    --warn-ink:#8A3A1B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);}
+  body{font-family:'IBM Plex Sans', sans-serif;font-size:15px;line-height:1.5;padding:0 0 64px;}
+  .wrap{max-width:560px;margin:0 auto;padding:24px 18px 0;}
+
+  header.hero{padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;}
+  .wordmark{font-family:'Fraunces', serif;font-weight:600;font-size:26px;color:var(--leaf-dark);}
+  .refresh-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;}
+  .refresh-btn:hover{border-color:var(--leaf);color:var(--leaf-dark);}
+
+  .empty{color:var(--muted);text-align:center;padding:40px 20px;font-size:14px;}
+
+  .order-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
+  .order-head{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .order-head-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .order-store{font-family:'Fraunces', serif;font-weight:500;font-size:17px;color:var(--leaf-dark);}
+  .order-meta{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .status-pill{font-size:11.5px;padding:3px 9px;border-radius:20px;background:#EAF2EB;color:var(--leaf-dark);font-weight:500;white-space:nowrap;}
+  .status-pill.preparing{background:#FCF2E4;color:#8A5A1B;}
+  .status-pill.out_for_delivery,.status-pill.ready{background:#E5EEF7;color:#1B4E8A;}
+  .status-pill.completed{background:#EDEDED;color:var(--muted);}
+
+  .order-body{padding:14px 16px 16px;display:none;}
+  .order-body.open{display:block;}
+
+  .item-line{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid #EFEBE0;}
+  .item-line:last-of-type{border-bottom:none;}
+  .item-check{width:20px;height:20px;margin-top:2px;accent-color:var(--leaf);}
+  .item-desc-text{font-size:14.5px;}
+  .item-qty-text{color:var(--muted);font-size:12.5px;}
+  .item-price{width:76px;padding:7px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit;font-size:13.5px;text-align:right;}
+  .sub-note{grid-column:2 / -1;margin-top:4px;}
+  .sub-note input{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit;font-size:12.5px;color:var(--muted);}
+
+  .totals-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px;}
+  .totals-row .cap{color:var(--muted);font-size:12.5px;}
+  .running-total{font-family:'Fraunces', serif;font-weight:600;font-size:19px;color:var(--leaf-dark);}
+  .running-total.over{color:var(--warn-ink);}
+
+  .over-warning{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink);font-size:13px;}
+
+  .action-row{display:flex;gap:8px;margin-top:14px;}
+  .btn{flex:1;padding:11px;border-radius:var(--radius);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);}
+  .btn.primary{background:var(--leaf);color:#fff;border-color:var(--leaf);}
+  .btn.primary:hover{background:var(--leaf-dark);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  .contact-line{font-size:13px;color:var(--muted);margin-top:8px;}
+  .contact-line a{color:var(--leaf-dark);}
+
+  .status{margin-top:10px;padding:9px 11px;border-radius:8px;font-size:13px;display:none;}
+  .status.show{display:block;}
+  .status.ok{background:#EAF2EB;color:var(--leaf-dark);border:1px solid #C7DBC9;}
+  .status.err{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="wordmark">Shopper</div>
+    <button class="refresh-btn" id="refresh">Refresh</button>
+  </header>
+
+  <div id="orders-container">
+    <div class="empty">Loading orders…</div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://samjaswvvtcmldatyncs.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhbWphc3d2dnRjbWxkYXR5bmNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzg5NDgsImV4cCI6MjEwMzYxNDk0OH0.vHDCFyBZkq3rJ5pyBgrSp2MXkqtB6bHof-73JzzC6Yc';
+
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+
+  const container = document.getElementById('orders-container');
+
+  async function loadOrders(){
+    container.innerHTML = '<div class="empty">Loading orders…</div>';
+    try {
+      const ordersRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/orders?order_type=eq.shopping_list&status=in.(confirmed,preparing)&order=created_at.asc`,
+        { headers }
+      );
+      if(!ordersRes.ok) throw new Error('failed to load orders');
+      const orders = await ordersRes.json();
+
+      if(orders.length === 0){
+        container.innerHTML = '<div class="empty">No open orders right now.</div>';
+        return;
+      }
+
+      const itemsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/order_items?order_id=in.(${orders.map(o => o.id).join(',')})`,
+        { headers }
+      );
+      const allItems = itemsRes.ok ? await itemsRes.json() : [];
+
+      // Time slot labels
+      const slotIds = [...new Set(orders.map(o => o.time_slot_id).filter(Boolean))];
+      let slotMap = {};
+      if(slotIds.length){
+        const slotsRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/time_slots?id=in.(${slotIds.join(',')})`,
+          { headers }
+        );
+        if(slotsRes.ok){
+          (await slotsRes.json()).forEach(s => { slotMap[s.id] = s; });
+        }
+      }
+
+      container.innerHTML = '';
+      orders.forEach(order => {
+        const items = allItems.filter(i => i.order_id === order.id);
+        container.appendChild(renderOrderCard(order, items, slotMap[order.time_slot_id]));
+      });
+
+    } catch(err){
+      container.innerHTML = '<div class="empty">Could not load orders. Try refreshing.</div>';
+    }
+  }
+
+  function renderOrderCard(order, items, slot){
+    const card = document.createElement('div');
+    card.className = 'order-card';
+
+    const head = document.createElement('div');
+    head.className = 'order-head';
+    const slotText = slot ? `${new Date(slot.slot_date + 'T00:00:00').toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'})} · ${slot.label}` : 'No time slot';
+    head.innerHTML = `
+      <div class="order-head-top">
+        <div>
+          <div class="order-store">${escapeHtml(order.store_name || 'Unnamed store')}</div>
+          <div class="order-meta">${escapeHtml(order.customer_name || 'Unknown customer')} · ${order.mode} · ${slotText}</div>
+        </div>
+        <div class="status-pill ${order.status}">${order.status.replace(/_/g,' ')}</div>
+      </div>
+    `;
+
+    const body = document.createElement('div');
+    body.className = 'order-body';
+
+    head.addEventListener('click', () => body.classList.toggle('open'));
+
+    const itemsWrap = document.createElement('div');
+    items.forEach(item => {
+      const line = document.createElement('div');
+      line.className = 'item-line';
+      line.innerHTML = `
+        <input type="checkbox" class="item-check" ${item.found === false ? '' : 'checked'} data-item-id="${item.id}" />
+        <div>
+          <div class="item-desc-text">${escapeHtml(item.item_description || '')}</div>
+          <div class="item-qty-text">Qty ${item.quantity}</div>
+          <div class="sub-note"><input type="text" placeholder="Substitution note (optional)" value="${escapeHtml(item.substitution_note || '')}" data-note-id="${item.id}" /></div>
+        </div>
+        <input type="number" class="item-price" step="0.01" min="0" placeholder="$" value="${item.unit_price != null ? item.unit_price : ''}" data-price-id="${item.id}" />
+      `;
+      itemsWrap.appendChild(line);
+    });
+    body.appendChild(itemsWrap);
+
+    const totalsRow = document.createElement('div');
+    totalsRow.className = 'totals-row';
+    totalsRow.innerHTML = `
+      <div>
+        <div class="running-total" id="total-${order.id}">$0.00</div>
+        ${order.budget_cap ? `<div class="cap">Cap: $${Number(order.budget_cap).toFixed(2)}</div>` : ''}
+      </div>
+    `;
+    body.appendChild(totalsRow);
+
+    const overWarning = document.createElement('div');
+    overWarning.className = 'over-warning';
+    overWarning.style.display = 'none';
+    overWarning.textContent = `Over budget — confirm with the customer before checking out.`;
+    body.appendChild(overWarning);
+
+    function recalcTotal(){
+      let total = 0;
+      itemsWrap.querySelectorAll('.item-price').forEach(inp => {
+        const val = parseFloat(inp.value);
+        const itemId = inp.dataset.priceId;
+        const item = items.find(i => i.id === itemId);
+        const checked = itemsWrap.querySelector(`.item-check[data-item-id="${itemId}"]`).checked;
+        if(!isNaN(val) && checked) total += val * item.quantity;
+      });
+      const totalEl = document.getElementById(`total-${order.id}`);
+      totalEl.textContent = `$${total.toFixed(2)}`;
+      const over = order.budget_cap && total > Number(order.budget_cap);
+      totalEl.classList.toggle('over', over);
+      overWarning.style.display = over ? 'block' : 'none';
+      return total;
+    }
+    itemsWrap.addEventListener('input', recalcTotal);
+    itemsWrap.addEventListener('change', recalcTotal);
+    recalcTotal();
+
+    if(order.customer_phone){
+      const contact = document.createElement('div');
+      contact.className = 'contact-line';
+      contact.innerHTML = `Contact: <a href="tel:${order.customer_phone}">${escapeHtml(order.customer_phone)}</a>`;
+      body.appendChild(contact);
+    }
+
+    const statusMsg = document.createElement('div');
+    statusMsg.className = 'status';
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'action-row';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn';
+    saveBtn.textContent = 'Save progress';
+    saveBtn.addEventListener('click', () => saveItems(order, itemsWrap, statusMsg, false));
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'btn primary';
+    confirmBtn.textContent = order.status === 'preparing' ? 'Confirm total & mark out for delivery/ready' : 'Start shopping';
+    confirmBtn.addEventListener('click', () => {
+      if(order.status !== 'preparing'){
+        updateOrderStatus(order, 'preparing', statusMsg);
+        confirmBtn.textContent = 'Confirm total & mark out for delivery/ready';
+      } else {
+        const total = recalcTotal();
+        saveItems(order, itemsWrap, statusMsg, true, total);
+      }
+    });
+
+    actionRow.appendChild(saveBtn);
+    actionRow.appendChild(confirmBtn);
+    body.appendChild(actionRow);
+    body.appendChild(statusMsg);
+
+    card.appendChild(head);
+    card.appendChild(body);
+    return card;
+  }
+
+  async function updateOrderStatus(order, status, statusMsg){
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+        method: 'PATCH',
+        headers: { ...headers, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ status })
+      });
+      if(!res.ok) throw new Error();
+      order.status = status;
+      showMsg(statusMsg, 'Marked as preparing.', true);
+    } catch(err){
+      showMsg(statusMsg, 'Could not update status.', false);
+    }
+  }
+
+  async function saveItems(order, itemsWrap, statusMsg, finalizing, total){
+    const updates = [];
+    itemsWrap.querySelectorAll('.item-line').forEach(line => {
+      const itemId = line.querySelector('.item-check').dataset.itemId;
+      const found = line.querySelector('.item-check').checked;
+      const note = line.querySelector('.sub-note input').value.trim();
+      const priceVal = line.querySelector('.item-price').value;
+      updates.push({
+        id: itemId,
+        found,
+        substitution_note: note || null,
+        unit_price: priceVal ? parseFloat(priceVal) : null
+      });
+    });
+
+    try {
+      for(const u of updates){
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/order_items?id=eq.${u.id}`, {
+          method: 'PATCH',
+          headers: { ...headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ found: u.found, substitution_note: u.substitution_note, unit_price: u.unit_price })
+        });
+        if(!res.ok) throw new Error();
+      }
+
+      if(finalizing){
+        const nextStatus = order.mode === 'pickup' ? 'ready' : 'out_for_delivery';
+        const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+          method: 'PATCH',
+          headers: { ...headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ final_total: total, status: nextStatus })
+        });
+        if(!orderRes.ok) throw new Error();
+        showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}.`, true);
+        setTimeout(loadOrders, 1200);
+      } else {
+        showMsg(statusMsg, 'Progress saved.', true);
+      }
+    } catch(err){
+      showMsg(statusMsg, 'Something went wrong saving. Please try again.', false);
+    }
+  }
+
+  function showMsg(el, msg, ok){
+    el.textContent = msg;
+    el.className = 'status show ' + (ok ? 'ok' : 'err');
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById('refresh').addEventListener('click', loadOrders);
+  loadOrders();
+</script>
+</body>
+</html>
