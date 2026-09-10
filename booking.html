@@ -1,1 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order — FreshHop</title>
+<style>
+  :root {
+    --green: #2e8b57;
+    --green-dark: #236941;
+    --bg: #f7f9f7;
+    --border: #d8ded9;
+    --text: #222;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0 0 60px;
+  }
+  header {
+    background: var(--green);
+    color: white;
+    padding: 20px;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.4rem; }
+  main {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+  input[type="text"],
+  input[type="tel"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 14px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+</style>
+</head><style>
+  #placeResults {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .place-result {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .place-result:last-child { border-bottom: none; }
+  .place-result:hover { background: var(--bg); }
+  .place-result .name { font-weight: 600; }
+  .place-result .addr { font-size: 0.8rem; color: var(--muted); }
 
+  .selected-place {
+    display: none;
+    background: var(--bg);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .selected-place .name { font-weight: 600; }
+  .selected-place button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 4px;
+  }
+
+  .toggle-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .toggle-row button {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .toggle-row button.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+    font-weight: 600;
+  }
+
+  #deliveryFields { display: none; }
+
+  button[type="submit"] {
+    width: 100%;
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button[type="submit"]:disabled {
+    background: #a8c9b6;
+    cursor: not-allowed;
+  }
+  button[type="submit"]:hover:not(:disabled) { background: var(--green-dark); }
+
+  #statusMsg {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.9rem;
+  }
+  #statusMsg.error { color: #b3261e; }
+  #statusMsg.success { color: var(--green-dark); }
+
+  #confirmation {
+    display: none;
+    text-align: center;
+    padding: 40px 16px;
+  }
+  #confirmation h2 { color: var(--green-dark); }
+</style><body>
+
+<header>
+  <h1>🐰 FreshHop</h1>
+</header>
+
+<main>
+  <div id="orderForm">
+    <form id="bookingForm">
+
+      <div class="card">
+        <label for="placeSearch">Where do you want to order from?</label>
+        <input type="text" id="placeSearch" placeholder="Search restaurants & stores nearby..." autocomplete="off">
+        <div id="placeResults"></div>
+        <div class="selected-place" id="selectedPlace">
+          <div class="name" id="selectedPlaceName"></div>
+          <div class="addr" id="selectedPlaceAddr"></div>
+          <button type="button" id="changePlace">Change</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label>Pickup or delivery?</label>
+        <div class="toggle-row">
+          <button type="button" class="active" id="pickupBtn">Pickup</button>
+          <button type="button" id="deliveryBtn">Delivery</button>
+        </div>
+
+        <div id="deliveryFields">
+          <label for="deliveryAddress">Delivery address</label>
+          <input type="text" id="deliveryAddress" placeholder="123 Main St, Battle Ground, WA">
+        </div>
+
+        <label for="customerName">Your name</label>
+        <input type="text" id="customerName" required>
+
+        <label for="customerPhone">Phone number</label>
+        <input type="tel" id="customerPhone" required placeholder="(360) 555-0123">
+
+        <label for="notes">What would you like to order?</label>
+        <textarea id="notes" placeholder="e.g. Two burritos, one with no onions, and a large horchata" required></textarea>
+
+        <label for="timeSlot">When?</label>
+        <select id="timeSlot">
+          <option value="asap">As soon as possible</option>
+          <option value="30min">In 30 minutes</option>
+          <option value="1hour">In 1 hour</option>
+          <option value="later">Later today</option>
+        </select>
+      </div>
+
+      <button type="submit" id="submitBtn" disabled>Select a place to order from</button>
+      <div id="statusMsg"></div>
+    </form>
+  </div>
+
+  <div id="confirmation">
+    <h2>Order sent! 🎉</h2>
+    <p>We've got your order for <strong id="confirmPlaceName"></strong> and we're getting it started.</p>
+    <p>We'll reach out at <strong id="confirmPhone"></strong> if anything comes up.</p>
+  </div>
+</main><script>
+  let selectedPlace = null;
+  let fulfillmentType = "pickup";
+  let searchTimeout = null;
+
+  const placeSearch = document.getElementById("placeSearch");
+  const placeResults = document.getElementById("placeResults");
+  const selectedPlaceEl = document.getElementById("selectedPlace");
+  const submitBtn = document.getElementById("submitBtn");
+
+  placeSearch.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    const query = placeSearch.value.trim();
+    if (query.length < 2) {
+      placeResults.style.display = "none";
+      return;
+    }
+    searchTimeout = setTimeout(() => searchPlaces(query), 400);
+  });
+
+  async function searchPlaces(query) {
+    try {
+      const res = await fetch(`/.netlify/functions/search-places?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      const results = data.results || data || [];
+      renderResults(results);
+    } catch (err) {
+      placeResults.innerHTML = `<div class="place-result">Couldn't load results — try again</div>`;
+      placeResults.style.display = "block";
+    }
+  }
+
+  function renderResults(results) {
+    if (!results.length) {
+      placeResults.innerHTML = `<div class="place-result">No places found</div>`;
+      placeResults.style.display = "block";
+      return;
+    }
+    placeResults.innerHTML = results.map((r, i) => `
+      <div class="place-result" data-index="${i}">
+        <div class="name">${escapeHtml(r.name || "Unnamed")}</div>
+        <div class="addr">${escapeHtml(r.address || "")}</div>
+      </div>
+    `).join("");
+    placeResults.style.display = "block";
+
+    placeResults.querySelectorAll(".place-result").forEach(el => {
+      el.addEventListener("click", () => {
+        const idx = el.getAttribute("data-index");
+        selectPlace(results[idx]);
+      });
+    });
+  }
+
+  function selectPlace(place) {
+    selectedPlace = place;
+    document.getElementById("selectedPlaceName").textContent = place.name || "Unnamed";
+    document.getElementById("selectedPlaceAddr").textContent = place.address || "";
+    selectedPlaceEl.style.display = "block";
+    placeResults.style.display = "none";
+    placeSearch.value = "";
+    placeSearch.style.display = "none";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Place order";
+  }
+
+  document.getElementById("changePlace").addEventListener("click", () => {
+    selectedPlace = null;
+    selectedPlaceEl.style.display = "none";
+    placeSearch.style.display = "block";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Select a place to order from";
+  });
+
+  const pickupBtn = document.getElementById("pickupBtn");
+  const deliveryBtn = document.getElementById("deliveryBtn");
+  const deliveryFields = document.getElementById("deliveryFields");
+
+  pickupBtn.addEventListener("click", () => {
+    fulfillmentType = "pickup";
+    pickupBtn.classList.add("active");
+    deliveryBtn.classList.remove("active");
+    deliveryFields.style.display = "none";
+  });
+
+  deliveryBtn.addEventListener("click", () => {
+    fulfillmentType = "delivery";
+    deliveryBtn.classList.add("active");
+    pickupBtn.classList.remove("active");
+    deliveryFields.style.display = "block";
+  });
+
+  document.getElementById("bookingForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selectedPlace) return;
+
+    const statusMsg = document.getElementById("statusMsg");
+    statusMsg.textContent = "";
+    statusMsg.className = "";
+
+    const deliveryAddress = document.getElementById("deliveryAddress").value.trim();
+    if (fulfillmentType === "delivery" && !deliveryAddress) {
+      statusMsg.textContent = "Please enter a delivery address.";
+      statusMsg.className = "error";
+      return;
+    }
+
+    const payload = {
+      place_name: selectedPlace.name || "",
+      place_address: selectedPlace.address || "",
+      place_phone: selectedPlace.phone || "",
+      customer_name: document.getElementById("customerName").value.trim(),
+      customer_phone: document.getElementById("customerPhone").value.trim(),
+      delivery_address: fulfillmentType === "delivery" ? deliveryAddress : null,
+      fulfillment_type: fulfillmentType,
+      notes: document.getElementById("notes").value.trim(),
+      time_slot: document.getElementById("timeSlot").value
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending order...";
+
+    try {
+      const res = await fetch("/.netlify/functions/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Request failed");
+
+      document.getElementById("orderForm").style.display = "none";
+      document.getElementById("confirmPlaceName").textContent = payload.place_name;
+      document.getElementById("confirmPhone").textContent = payload.customer_phone;
+      document.getElementById("confirmation").style.display = "block";
+    } catch (err) {
+      statusMsg.textContent = "Something went wrong sending your order. Please try again.";
+      statusMsg.className = "error";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Place order";
+    }
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
