@@ -125,6 +125,20 @@
   .status.err{background:#FBEAE3;color:#8A3A1B;border:1px solid #F0C4AE;}
 
   .cap-note{font-size:12.5px;color:var(--muted);margin-top:5px;}
+
+  select#slot_date{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);font-family:inherit;font-size:15px;color:var(--ink);
+  }
+  .slot-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  .slot-btn{
+    position:relative;padding:11px 10px;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--card);font-family:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;
+    text-align:left;line-height:1.35;
+  }
+  .slot-btn .slot-tag{display:block;font-size:11px;color:var(--citrus);margin-top:2px;}
+  .slot-btn:disabled{color:var(--muted);background:#F1EFE7;cursor:not-allowed;text-decoration:line-through;}
+  .slot-btn.selected{border-color:var(--leaf);background:#EAF2EB;box-shadow:0 0 0 1px var(--leaf) inset;}
 </style>
 </head>
 <body>
@@ -190,6 +204,19 @@
       </div>
     </section>
 
+    <section>
+      <h2>Choose a time</h2>
+      <div class="field">
+        <label for="slot_date">Date</label>
+        <select id="slot_date"></select>
+      </div>
+      <div class="field">
+        <label>Time window</label>
+        <div id="slot-list" class="slot-list"></div>
+        <div class="hint" id="slot-hint">Loading available times…</div>
+      </div>
+    </section>
+
     <button type="submit" class="submit-btn" id="submit-btn">Submit order</button>
     <div class="status" id="status"></div>
   </form>
@@ -239,8 +266,84 @@
         addressField.style.display = 'block';
         addressInput.required = true;
       }
+      loadSlots();
     });
   });
+
+  // Appointment slot picker
+  let slotsByDate = {};
+  let selectedSlotId = null;
+  const slotDateSelect = document.getElementById('slot_date');
+  const slotListEl = document.getElementById('slot-list');
+  const slotHintEl = document.getElementById('slot-hint');
+
+  async function loadSlots(){
+    selectedSlotId = null;
+    slotHintEl.textContent = 'Loading available times…';
+    slotHintEl.style.display = 'block';
+    slotListEl.innerHTML = '';
+    slotDateSelect.innerHTML = '';
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/time_slots?mode=eq.${mode}&slot_date=gte.${new Date().toISOString().slice(0,10)}&order=slot_date.asc,label.asc`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      );
+      if(!res.ok) throw new Error('slot fetch failed');
+      const slots = await res.json();
+
+      slotsByDate = {};
+      slots.forEach(s => {
+        if(!slotsByDate[s.slot_date]) slotsByDate[s.slot_date] = [];
+        slotsByDate[s.slot_date].push(s);
+      });
+
+      const dates = Object.keys(slotsByDate).sort();
+      if(dates.length === 0){
+        slotHintEl.textContent = 'No time slots available right now — please check back soon.';
+        return;
+      }
+
+      dates.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        const dt = new Date(d + 'T00:00:00');
+        opt.textContent = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        slotDateSelect.appendChild(opt);
+      });
+
+      slotHintEl.style.display = 'none';
+      renderSlotsForDate(dates[0]);
+      slotDateSelect.onchange = () => renderSlotsForDate(slotDateSelect.value);
+
+    } catch(err){
+      slotHintEl.textContent = 'Could not load time slots. Please try again.';
+    }
+  }
+
+  function renderSlotsForDate(date){
+    selectedSlotId = null;
+    slotListEl.innerHTML = '';
+    const daySlots = slotsByDate[date] || [];
+    daySlots.forEach(s => {
+      const full = s.booked_count >= s.capacity;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'slot-btn';
+      btn.disabled = full;
+      btn.innerHTML = s.label + (s.tag ? `<span class="slot-tag">${s.tag}</span>` : '');
+      if(!full){
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedSlotId = s.id;
+        });
+      }
+      slotListEl.appendChild(btn);
+    });
+  }
+
+  loadSlots();
 
   const form = document.getElementById('order-form');
   const submitBtn = document.getElementById('submit-btn');
@@ -250,6 +353,7 @@
     statusEl.textContent = msg;
     statusEl.className = 'status show ' + (ok ? 'ok' : 'err');
   }
+
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -265,6 +369,11 @@
       return;
     }
 
+    if(!selectedSlotId){
+      showStatus('Pick a delivery or pickup time before submitting.', false);
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
 
@@ -273,6 +382,7 @@
     const orderPayload = {
       order_type: 'shopping_list',
       mode: mode,
+      time_slot_id: selectedSlotId,
       store_name: document.getElementById('store_name').value.trim(),
       store_address: document.getElementById('store_address').value.trim(),
       address: mode === 'delivery' ? document.getElementById('address').value.trim() : null,
@@ -295,6 +405,14 @@
       });
 
       if(!orderRes.ok){
+        if(orderRes.status === 400){
+          // Likely the capacity trigger rejecting a slot that just filled up
+          showStatus('That time slot just filled up — please pick another.', false);
+          loadSlots();
+          submitBtn.textContent = 'Submit order';
+          submitBtn.disabled = false;
+          return;
+        }
         throw new Error(`Order failed (${orderRes.status})`);
       }
       const orderData = await orderRes.json();
@@ -327,6 +445,7 @@
       itemsEl.innerHTML = '';
       addItemRow();
       addItemRow();
+      loadSlots();
       submitBtn.textContent = 'Submit order';
       submitBtn.disabled = false;
 
