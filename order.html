@@ -141,11 +141,11 @@
       <h2>Where should we shop</h2>
       <div class="field">
         <label for="store_name">Store or restaurant name</label>
-        <input type="text" id="store_name" required placeholder="e.g. Fred Meyer, Battle Ground" />
+        <input type="text" id="store_name" name="store_name" autocomplete="off" required placeholder="e.g. Fred Meyer, Battle Ground" />
       </div>
       <div class="field">
         <label for="store_address">Store address</label>
-        <input type="text" id="store_address" required placeholder="e.g. 1401 SW 9th Ave, Battle Ground, WA" />
+        <input type="text" id="store_address" name="store_address" autocomplete="off" required placeholder="e.g. 1401 SW 9th Ave, Battle Ground, WA" />
       </div>
     </section>
 
@@ -160,7 +160,7 @@
       <h2>Budget</h2>
       <div class="field">
         <label for="budget_cap">Spending cap (optional)</label>
-        <input type="number" id="budget_cap" min="0" step="0.01" placeholder="e.g. 80.00" />
+        <input type="number" id="budget_cap" name="budget_cap" autocomplete="off" min="0" step="0.01" placeholder="e.g. 80.00" />
         <div class="cap-note">If your total goes over this, we'll check with you before checking out.</div>
       </div>
     </section>
@@ -176,16 +176,16 @@
       </div>
       <div class="field" id="address-field">
         <label for="address">Delivery address</label>
-        <input type="text" id="address" placeholder="Street, city, ZIP" required />
+        <input type="text" id="address" name="delivery_address" autocomplete="street-address" placeholder="Street, city, ZIP" required />
       </div>
       <div class="row2">
         <div class="field">
           <label for="customer_name">Name</label>
-          <input type="text" id="customer_name" required />
+          <input type="text" id="customer_name" name="customer_name" autocomplete="name" required />
         </div>
         <div class="field">
           <label for="customer_phone">Phone</label>
-          <input type="tel" id="customer_phone" required placeholder="(360) 555-0100" />
+          <input type="tel" id="customer_phone" name="customer_phone" autocomplete="tel" required placeholder="(360) 555-0100" />
         </div>
       </div>
     </section>
@@ -208,8 +208,8 @@
     const row = document.createElement('div');
     row.className = 'item-row';
     row.innerHTML = `
-      <input type="text" class="item-desc" placeholder="e.g. 2% milk, gallon" value="${prefillDesc}" required />
-      <input type="number" class="item-qty" min="1" value="${prefillQty}" required />
+      <input type="text" class="item-desc" name="item_desc_${itemCount}" autocomplete="off" placeholder="e.g. 2% milk, gallon" value="${prefillDesc}" required />
+      <input type="number" class="item-qty" name="item_qty_${itemCount}" autocomplete="off" min="1" value="${prefillQty}" required />
       <button type="button" class="remove-item" aria-label="Remove item">&times;</button>
     `;
     row.querySelector('.remove-item').addEventListener('click', () => {
