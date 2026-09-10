@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FreshHop — Build your order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F5EF;
+    --leaf:#28503B;
+    --leaf-dark:#193226;
+    --citrus:#E8763A;
+    --ink:#1C211D;
+    --muted:#6E756E;
+    --line:#DAD5C6;
+    --card:#FFFFFF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);}
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    padding:0 0 64px;
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:28px 20px 0;}
+
+  header.hero{padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:26px;}
+  .wordmark{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:34px;
+    color:var(--leaf-dark);
+    letter-spacing:-0.01em;
+    display:inline-flex;
+  }
+  .wordmark span{display:inline-block;}
+  .wordmark .o1{animation:hop 1.8s ease-in-out infinite;}
+  .wordmark .o2{animation:hop 1.8s ease-in-out infinite; animation-delay:0.12s;}
+  @keyframes hop{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    30%{transform:translateY(-6px) rotate(-4deg);}
+    50%{transform:translateY(0) rotate(2deg);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .wordmark .o1, .wordmark .o2{animation:none;}
+  }
+  .tag{color:var(--muted);font-size:14px;margin-top:4px;}
+
+  h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:19px;
+    margin:0 0 12px;
+    color:var(--leaf-dark);
+  }
+  section{margin-bottom:30px;}
+
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;}
+  input[type=text], input[type=tel], input[type=number]{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--card);
+    font-family:inherit;
+    font-size:15px;
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--leaf); outline-offset:1px;}
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .mode-toggle{display:flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .mode-toggle button{
+    flex:1;padding:10px;border:none;background:var(--card);
+    font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;
+  }
+  .mode-toggle button.active{background:var(--leaf);color:#fff;font-weight:500;}
+
+  .item-row{
+    display:grid;
+    grid-template-columns:1fr 60px 32px;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+  .item-row input{padding:9px 10px;font-size:14px;}
+  .remove-item{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);color:var(--muted);font-size:16px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .remove-item:hover{border-color:var(--citrus);color:var(--citrus);}
+
+  .add-item{
+    width:100%;padding:10px;margin-top:4px;
+    border:1px dashed var(--line);border-radius:var(--radius);
+    background:transparent;color:var(--leaf-dark);font-family:inherit;
+    font-size:14px;font-weight:500;cursor:pointer;
+  }
+  .add-item:hover{border-color:var(--leaf);}
+
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;}
+
+  .submit-btn{
+    width:100%;padding:15px;
+    background:var(--leaf);color:#fff;border:none;border-radius:var(--radius);
+    font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;
+    margin-top:6px;
+  }
+  .submit-btn:disabled{background:#A9B5AC;cursor:not-allowed;}
+  .submit-btn:not(:disabled):hover{background:var(--leaf-dark);}
+
+  .status{
+    margin-top:14px;padding:12px 14px;border-radius:var(--radius);
+    font-size:14px;display:none;
+  }
+  .status.show{display:block;}
+  .status.ok{background:#EAF2EB;color:var(--leaf-dark);border:1px solid #C7DBC9;}
+  .status.err{background:#FBEAE3;color:#8A3A1B;border:1px solid #F0C4AE;}
+
+  .cap-note{font-size:12.5px;color:var(--muted);margin-top:5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="wordmark">Fresh<span class="o1">H</span><span class="o2">op</span></div>
+    <div class="tag">Tell us what you need — a shopper picks it up and brings it to you.</div>
+  </header>
+
+  <form id="order-form">
+
+    <section>
+      <h2>Where should we shop</h2>
+      <div class="field">
+        <label for="store_name">Store or restaurant name</label>
+        <input type="text" id="store_name" required placeholder="e.g. Fred Meyer, Battle Ground" />
+      </div>
+      <div class="field">
+        <label for="store_address">Store address</label>
+        <input type="text" id="store_address" required placeholder="e.g. 1401 SW 9th Ave, Battle Ground, WA" />
+      </div>
+    </section>
+
+    <section>
+      <h2>Your list</h2>
+      <div id="items"></div>
+      <button type="button" class="add-item" id="add-item">+ Add item</button>
+      <div class="hint">Be specific where it matters — brand, size, ripeness. We'll ask before substituting anything.</div>
+    </section>
+
+    <section>
+      <h2>Budget</h2>
+      <div class="field">
+        <label for="budget_cap">Spending cap (optional)</label>
+        <input type="number" id="budget_cap" min="0" step="0.01" placeholder="e.g. 80.00" />
+        <div class="cap-note">If your total goes over this, we'll check with you before checking out.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Delivery details</h2>
+      <div class="field">
+        <label>Method</label>
+        <div class="mode-toggle">
+          <button type="button" data-mode="delivery" class="active">Delivery</button>
+          <button type="button" data-mode="pickup">Pickup</button>
+        </div>
+      </div>
+      <div class="field" id="address-field">
+        <label for="address">Delivery address</label>
+        <input type="text" id="address" placeholder="Street, city, ZIP" required />
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="customer_name">Name</label>
+          <input type="text" id="customer_name" required />
+        </div>
+        <div class="field">
+          <label for="customer_phone">Phone</label>
+          <input type="tel" id="customer_phone" required placeholder="(360) 555-0100" />
+        </div>
+      </div>
+    </section>
+
+    <button type="submit" class="submit-btn" id="submit-btn">Submit order</button>
+    <div class="status" id="status"></div>
+  </form>
+
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://samjaswvvtcmldatyncs.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhbWphc3d2dnRjbWxkYXR5bmNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzg5NDgsImV4cCI6MjEwMzYxNDk0OH0.vHDCFyBZkq3rJ5pyBgrSp2MXkqtB6bHof-73JzzC6Yc';
+
+  const itemsEl = document.getElementById('items');
+  let itemCount = 0;
+
+  function addItemRow(prefillDesc = '', prefillQty = 1){
+    itemCount++;
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `
+      <input type="text" class="item-desc" placeholder="e.g. 2% milk, gallon" value="${prefillDesc}" required />
+      <input type="number" class="item-qty" min="1" value="${prefillQty}" required />
+      <button type="button" class="remove-item" aria-label="Remove item">&times;</button>
+    `;
+    row.querySelector('.remove-item').addEventListener('click', () => {
+      row.remove();
+    });
+    itemsEl.appendChild(row);
+  }
+
+  addItemRow();
+  addItemRow();
+  document.getElementById('add-item').addEventListener('click', () => addItemRow());
+
+  // Delivery / pickup toggle
+  let mode = 'delivery';
+  const modeButtons = document.querySelectorAll('.mode-toggle button');
+  const addressField = document.getElementById('address-field');
+  const addressInput = document.getElementById('address');
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      modeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+      if(mode === 'pickup'){
+        addressField.style.display = 'none';
+        addressInput.required = false;
+      } else {
+        addressField.style.display = 'block';
+        addressInput.required = true;
+      }
+    });
+  });
+
+  const form = document.getElementById('order-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('status');
+
+  function showStatus(msg, ok){
+    statusEl.textContent = msg;
+    statusEl.className = 'status show ' + (ok ? 'ok' : 'err');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const rows = [...document.querySelectorAll('.item-row')];
+    const items = rows.map(r => ({
+      item_description: r.querySelector('.item-desc').value.trim(),
+      quantity: parseInt(r.querySelector('.item-qty').value, 10) || 1
+    })).filter(i => i.item_description.length > 0);
+
+    if(items.length === 0){
+      showStatus('Add at least one item to your list.', false);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const budgetCapVal = document.getElementById('budget_cap').value;
+
+    const orderPayload = {
+      order_type: 'shopping_list',
+      mode: mode,
+      store_name: document.getElementById('store_name').value.trim(),
+      store_address: document.getElementById('store_address').value.trim(),
+      address: mode === 'delivery' ? document.getElementById('address').value.trim() : null,
+      customer_name: document.getElementById('customer_name').value.trim(),
+      customer_phone: document.getElementById('customer_phone').value.trim(),
+      budget_cap: budgetCapVal ? parseFloat(budgetCapVal) : null
+    };
+
+    try {
+      // 1. Insert the order
+      const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(orderPayload)
+      });
+
+      if(!orderRes.ok){
+        throw new Error(`Order failed (${orderRes.status})`);
+      }
+      const orderData = await orderRes.json();
+      const orderId = orderData[0].id;
+
+      // 2. Insert the items
+      const itemPayload = items.map(i => ({
+        order_id: orderId,
+        item_description: i.item_description,
+        quantity: i.quantity
+      }));
+
+      const itemsRes = await fetch(`${SUPABASE_URL}/rest/v1/order_items`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(itemPayload)
+      });
+
+      if(!itemsRes.ok){
+        throw new Error(`Items failed (${itemsRes.status})`);
+      }
+
+      showStatus(`Order submitted! We'll text you at ${orderPayload.customer_phone} once your total is confirmed.`, true);
+      form.reset();
+      itemsEl.innerHTML = '';
+      addItemRow();
+      addItemRow();
+      submitBtn.textContent = 'Submit order';
+      submitBtn.disabled = false;
+
+    } catch(err){
+      showStatus('Something went wrong submitting your order. Please try again.', false);
+      submitBtn.textContent = 'Submit order';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
