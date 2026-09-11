@@ -161,4 +161,55 @@
 </footer>
 
 </body>
+</html><script src="https://js.stripe.com/v3/"></script>
+
+<div id="checkout-section">
+  <h3>Test Checkout</h3>
+  <label for="checkout-amount">Amount ($)</label>
+  <input type="number" id="checkout-amount" value="10.00" step="0.01" min="0.50" />
+  <div id="card-element"></div>
+  <button id="submit-payment">Pay</button>
+  <p id="payment-status"></p>
+</div>
+
+<script>
+  const stripe = Stripe('pk_test_51UEG9i1qbEdSJVmeIMu99DzbhpkLgpwyJclwVSImJYtoZVZEO72f4BEsGhu8l9IJlVHq5LCbXM1pY82oJvwGvNGZ00497nfXYC');
+  const elements = stripe.elements();
+  const cardElement = elements.create('card');
+  cardElement.mount('#card-element');
+
+  document.getElementById('submit-payment').addEventListener('click', async () => {
+    const statusEl = document.getElementById('payment-status');
+    const amount = parseFloat(document.getElementById('checkout-amount').value);
+
+    statusEl.textContent = 'Processing...';
+
+    try {
+      const res = await fetch('/.netlify/functions/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        statusEl.textContent = 'Error: ' + data.error;
+        return;
+      }
+
+      const result = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      if (result.error) {
+        statusEl.textContent = 'Payment failed: ' + result.error.message;
+      } else if (result.paymentIntent.status === 'succeeded') {
+        statusEl.textContent = 'Payment successful!';
+      }
+    } catch (err) {
+      statusEl.textContent = 'Something went wrong.';
+    }
+  });
+</script></body>
 </html>
