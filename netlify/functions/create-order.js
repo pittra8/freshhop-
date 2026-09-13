@@ -11,22 +11,24 @@
 
 const { createClient } = require("@supabase/supabase-js");
 
-module.exports.handler = async (req, context) => {
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
+exports.handler = async function (event, context) {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ error: "Method not allowed" }),
+    };
   }
 
   let body;
   try {
-    body = await req.json();
+    body = JSON.parse(event.body);
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400,
+    return {
+      statusCode: 400,
       headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ error: "Invalid JSON body" }),
+    };
   }
 
   const {
@@ -52,13 +54,11 @@ module.exports.handler = async (req, context) => {
   if (mode === "delivery" && !address) missing.push("address");
 
   if (missing.length) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields", missing }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return {
+      statusCode: 400,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Missing required fields", missing }),
+    };
   }
 
   const supabase = createClient(
@@ -87,13 +87,11 @@ module.exports.handler = async (req, context) => {
     .single();
 
   if (orderError) {
-    return new Response(
-      JSON.stringify({ error: "Failed to create order", details: orderError.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Failed to create order", details: orderError.message }),
+    };
   }
 
   // If line items were provided, insert them linked to this order
@@ -111,25 +109,21 @@ module.exports.handler = async (req, context) => {
       .insert(orderItems);
 
     if (itemsError) {
-      return new Response(
-        JSON.stringify({
+      return {
+        statusCode: 500,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           error: "Order created but failed to add items",
           details: itemsError.message,
           order_id: order.id,
         }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      };
     }
   }
 
-  return new Response(
-    JSON.stringify({ success: true, order_id: order.id, order }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ success: true, order_id: order.id, order }),
+  };
 };
