@@ -11,7 +11,7 @@
 
 const { createClient } = require("@supabase/supabase-js");
 
-module.exports = async (req, context) => {
+module.exports.handler = async (req, context) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
