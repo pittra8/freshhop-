@@ -63,6 +63,7 @@ exports.handler = async function (event) {
           quantity: 1,
         },
       ],
+      managed_payments: { enabled: false },
       metadata: {
         order_id: order.id,
       },
