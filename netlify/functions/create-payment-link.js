@@ -8,6 +8,8 @@
 const { createClient } = require("@supabase/supabase-js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+const FLAT_DELIVERY_FEE = 5.00;
+
 exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
     return {
@@ -56,8 +58,20 @@ exports.handler = async function (event, context) {
     };
   }
 
-  const itemTotal = order.item_total || 0;
-  const deliveryFee = order.delivery_fee || 0;
+  // Real shopping-list orders carry the price in final_total (set once a
+  // shopper confirms the cart). The old test-order flow used item_total
+  // directly, so we fall back to that for backward compatibility.
+  const itemTotal = order.final_total || order.item_total || 0;
+
+  // Delivery fee: real orders don't store one on the row, so apply the
+  // flat fee automatically for delivery-mode orders. Pickup orders and
+  // any order that already has an explicit delivery_fee use that instead.
+  const deliveryFee =
+    order.delivery_fee != null
+      ? order.delivery_fee
+      : order.mode === "delivery"
+      ? FLAT_DELIVERY_FEE
+      : 0;
 
   if (!itemTotal || itemTotal <= 0) {
     return {
