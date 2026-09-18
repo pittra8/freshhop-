@@ -41,7 +41,8 @@ exports.handler = async function (event, context) {
     customer_name,
     customer_phone,
     order_type,
-    total,
+    item_total,
+    delivery_fee,
     budget_cap,
     items,
   } = body;
@@ -52,6 +53,7 @@ exports.handler = async function (event, context) {
   if (!customer_name) missing.push("customer_name");
   if (!customer_phone) missing.push("customer_phone");
   if (mode === "delivery" && !address) missing.push("address");
+  if (item_total === undefined || item_total === null) missing.push("item_total");
 
   if (missing.length) {
     return {
@@ -60,6 +62,10 @@ exports.handler = async function (event, context) {
       body: JSON.stringify({ error: "Missing required fields", missing }),
     };
   }
+
+  const parsedItemTotal = parseFloat(item_total) || 0;
+  const parsedDeliveryFee = parseFloat(delivery_fee) || 0;
+  const total = parsedItemTotal + parsedDeliveryFee;
 
   const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -79,7 +85,9 @@ exports.handler = async function (event, context) {
         customer_name,
         customer_phone,
         order_type: order_type || "catalog",
-        total: total || null,
+        item_total: parsedItemTotal,
+        delivery_fee: parsedDeliveryFee,
+        total: total,
         budget_cap: budget_cap || null,
       },
     ])
