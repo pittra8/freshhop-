@@ -9,6 +9,7 @@ const { createClient } = require("@supabase/supabase-js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const FLAT_DELIVERY_FEE = 5.00;
+const FLAT_SHOPPING_FEE = 3.99;
 
 exports.handler = async function (event, context) {
   if (event.httpMethod !== "POST") {
@@ -73,6 +74,11 @@ exports.handler = async function (event, context) {
       ? FLAT_DELIVERY_FEE
       : 0;
 
+  // Shopping fee: covers the shopper's time doing the actual shopping.
+  // Applied to every shopping-list order regardless of delivery/pickup.
+  const shoppingFee =
+    order.shopping_fee != null ? order.shopping_fee : FLAT_SHOPPING_FEE;
+
   if (!itemTotal || itemTotal <= 0) {
     return {
       statusCode: 400,
@@ -93,6 +99,19 @@ exports.handler = async function (event, context) {
       quantity: 1,
     },
   ];
+
+  if (shoppingFee > 0) {
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: "Shopping fee",
+        },
+        unit_amount: Math.round(shoppingFee * 100),
+      },
+      quantity: 1,
+    });
+  }
 
   if (deliveryFee > 0) {
     lineItems.push({
