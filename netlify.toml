@@ -1,5 +1,9 @@
+
 [build]
   publish = "."
+
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_SERVICE_KEY"
 
 [functions]
   directory = "netlify/functions"
