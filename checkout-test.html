@@ -43,7 +43,7 @@
 
   <div id="result"></div>
 
-  <script>alert('script loaded');
+  <script>
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const resultEl = document.getElementById('result');
       resultEl.textContent = 'Creating order...';
@@ -86,3 +86,12 @@
         }
 
         resultEl.innerHTML = 'Order ID: ' + orderData.order_id +
+          '<br><br>Payment link created:<br>' +
+          '<a class="pay-link" href="' + linkData.payment_link_url + '" target="_blank">Open Payment Link</a>';
+      } catch (err) {
+        resultEl.textContent = 'Unexpected error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
