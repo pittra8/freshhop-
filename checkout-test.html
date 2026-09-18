@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test Order + Payment Link</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    label { display: block; font-weight: bold; margin-top: 20px; }
+    input, select { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; }
+    button { margin-top: 30px; padding: 14px; background: #2e7d4f; color: white; border: none; font-size: 16px; cursor: pointer; }
+    #result { margin-top: 20px; padding: 15px; background: #f4f4f4; white-space: pre-wrap; word-wrap: break-word; }
+    .pay-link { display: inline-block; margin-top: 10px; padding: 12px 20px; background: #635bff; color: white; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>Test Order + Payment Link</h1>
+
+  <label for="mode">Mode</label>
+  <select id="mode">
+    <option value="delivery">Delivery</option>
+    <option value="pickup">Pickup</option>
+  </select>
+
+  <label for="customer_name">Customer Name</label>
+  <input type="text" id="customer_name" value="Test Customer">
+
+  <label for="customer_phone">Customer Phone</label>
+  <input type="text" id="customer_phone" value="360-555-0123">
+
+  <label for="address">Delivery Address (if delivery)</label>
+  <input type="text" id="address" value="123 Test St, Battle Ground, WA">
+
+  <label for="store_name">Store Name</label>
+  <input type="text" id="store_name" value="Test Restaurant">
+
+  <label for="item_total">Item Total ($)</label>
+  <input type="number" id="item_total" value="12.00" step="0.01">
+
+  <label for="delivery_fee">Delivery Fee ($)</label>
+  <input type="number" id="delivery_fee" value="3.00" step="0.01">
+
+  <button id="submitBtn">Create Order + Payment Link</button>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const resultEl = document.getElementById('result');
+      resultEl.textContent = 'Creating order...';
+
+      const orderBody = {
+        mode: document.getElementById('mode').value,
+        address: document.getElementById('address').value,
+        store_name: document.getElementById('store_name').value,
+        customer_name: document.getElementById('customer_name').value,
+        customer_phone: document.getElementById('customer_phone').value,
+        item_total: parseFloat(document.getElementById('item_total').value),
+        delivery_fee: parseFloat(document.getElementById('delivery_fee').value),
+      };
+
+      try {
+        const orderRes = await fetch('/.netlify/functions/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderBody),
+        });
+        const orderData = await orderRes.json();
+
+        if (orderData.error) {
+          resultEl.textContent = 'Order creation failed:\n' + JSON.stringify(orderData, null, 2);
+          return;
+        }
+
+        resultEl.textContent = 'Order ID: ' + orderData.order_id + '\n\nCreating payment link...';
+
+        const linkRes = await fetch('/.netlify/functions/create-payment-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderData.order_id }),
+        });
+        const linkData = await linkRes.json();
+
+        if (linkData.error) {
+          resultEl.textContent = 'Order created (ID: ' + orderData.order_id + ') but payment link failed:\n' + JSON.stringify(linkData, null, 2);
+          return;
+        }
+
+        resultEl.innerHTML = 'Order ID: ' + orderData.order_id +
