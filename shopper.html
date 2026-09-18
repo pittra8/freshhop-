@@ -72,6 +72,9 @@
   .contact-line{font-size:13px;color:var(--muted);margin-top:8px;}
   .contact-line a{color:var(--leaf-dark);}
 
+  .pay-link-box{margin-top:12px;padding:12px 14px;border-radius:var(--radius);background:#EEF0FF;border:1px solid #C9CEF5;font-size:13.5px;}
+  .pay-link-box a{display:inline-block;margin-top:6px;padding:9px 14px;background:#635bff;color:#fff;text-decoration:none;border-radius:8px;font-size:13.5px;}
+
   .status{margin-top:10px;padding:9px 11px;border-radius:8px;font-size:13px;display:none;}
   .status.show{display:block;}
   .status.ok{background:#EAF2EB;color:var(--leaf-dark);border:1px solid #C7DBC9;}
@@ -235,6 +238,11 @@
       body.appendChild(contact);
     }
 
+    const payLinkBox = document.createElement('div');
+    payLinkBox.className = 'pay-link-box';
+    payLinkBox.style.display = 'none';
+    body.appendChild(payLinkBox);
+
     const statusMsg = document.createElement('div');
     statusMsg.className = 'status';
 
@@ -245,7 +253,7 @@
     saveBtn.type = 'button';
     saveBtn.className = 'btn';
     saveBtn.textContent = 'Save progress';
-    saveBtn.addEventListener('click', () => saveItems(order, itemsWrap, statusMsg, false));
+    saveBtn.addEventListener('click', () => saveItems(order, itemsWrap, statusMsg, false, undefined, payLinkBox, confirmBtn));
 
     const confirmBtn = document.createElement('button');
     confirmBtn.type = 'button';
@@ -257,7 +265,7 @@
         confirmBtn.textContent = 'Confirm total & mark out for delivery/ready';
       } else {
         const total = recalcTotal();
-        saveItems(order, itemsWrap, statusMsg, true, total);
+        saveItems(order, itemsWrap, statusMsg, true, total, payLinkBox, confirmBtn);
       }
     });
 
@@ -286,7 +294,7 @@
     }
   }
 
-  async function saveItems(order, itemsWrap, statusMsg, finalizing, total){
+  async function saveItems(order, itemsWrap, statusMsg, finalizing, total, payLinkBox, confirmBtn){
     const updates = [];
     itemsWrap.querySelectorAll('.item-line').forEach(line => {
       const itemId = line.querySelector('.item-check').dataset.itemId;
@@ -319,8 +327,31 @@
           body: JSON.stringify({ final_total: total, status: nextStatus })
         });
         if(!orderRes.ok) throw new Error();
-        showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}.`, true);
-        setTimeout(loadOrders, 1200);
+
+        showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}. Creating payment link…`, true);
+        if(confirmBtn){ confirmBtn.disabled = true; }
+
+        try {
+          const linkRes = await fetch('/.netlify/functions/create-payment-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: order.id })
+          });
+          const linkData = await linkRes.json();
+
+          if(linkData.error){
+            showMsg(statusMsg, `Order confirmed, but payment link failed: ${linkData.error}`, false);
+          } else {
+            showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}.`, true);
+            if(payLinkBox){
+              payLinkBox.style.display = 'block';
+              payLinkBox.innerHTML = `Payment link ready — send this to the customer:<br><a href="${linkData.payment_link_url}" target="_blank">Open payment link</a>`;
+            }
+          }
+        } catch(linkErr){
+          showMsg(statusMsg, 'Order confirmed, but creating the payment link failed. Please try again or create it manually.', false);
+        }
+
       } else {
         showMsg(statusMsg, 'Progress saved.', true);
       }
