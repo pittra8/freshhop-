@@ -230,6 +230,12 @@
   const itemsEl = document.getElementById('items');
   let itemCount = 0;
 
+  function localDateStr(){
+    const d = new Date();
+    const tzOffsetMs = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0,10);
+  }
+
   function addItemRow(prefillDesc = '', prefillQty = 1){
     itemCount++;
     const row = document.createElement('div');
@@ -286,7 +292,7 @@
 
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/time_slots?mode=eq.${mode}&slot_date=gte.${new Date().toISOString().slice(0,10)}&order=slot_date.asc,label.asc`,
+        `${SUPABASE_URL}/rest/v1/time_slots?mode=eq.${mode}&slot_date=gte.${localDateStr()}&order=slot_date.asc,label.asc`,
         { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
       );
       if(!res.ok) throw new Error('slot fetch failed');
