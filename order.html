@@ -446,6 +446,19 @@
         throw new Error(`Items failed (${itemsRes.status})`);
       }
 
+      fetch('/.netlify/functions/notify-new-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          store_name: orderPayload.store_name,
+          customer_name: orderPayload.customer_name,
+          customer_phone: orderPayload.customer_phone,
+          mode: orderPayload.mode,
+          address: orderPayload.address
+        })
+      }).catch(() => {});
+
       showStatus(`Order submitted! We'll text you at ${orderPayload.customer_phone} once your total is confirmed.`, true);
       form.reset();
       itemsEl.innerHTML = '';
