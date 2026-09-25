@@ -5,7 +5,10 @@
 //   RESEND_API_KEY
 
 exports.handler = async function (event, context) {
+  console.log("notify-new-order: function invoked, method =", event.httpMethod);
+
   if (event.httpMethod !== "POST") {
+    console.log("notify-new-order: rejected, not POST");
     return {
       statusCode: 405,
       headers: { "Content-Type": "application/json" },
@@ -16,7 +19,9 @@ exports.handler = async function (event, context) {
   let body;
   try {
     body = JSON.parse(event.body);
+    console.log("notify-new-order: parsed body ok, order_id =", body.order_id);
   } catch (err) {
+    console.log("notify-new-order: JSON parse error:", err.message);
     return {
       statusCode: 400,
       headers: { "Content-Type": "application/json" },
@@ -33,6 +38,8 @@ exports.handler = async function (event, context) {
     order_id,
   } = body;
 
+  console.log("notify-new-order: RESEND_API_KEY present?", !!process.env.RESEND_API_KEY);
+
   const html = `
     <h2>New FreshHop order</h2>
     <p><strong>Store:</strong> ${store_name || "N/A"}</p>
@@ -43,6 +50,7 @@ exports.handler = async function (event, context) {
   `;
 
   try {
+    console.log("notify-new-order: calling Resend API...");
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -57,8 +65,11 @@ exports.handler = async function (event, context) {
       }),
     });
 
+    console.log("notify-new-order: Resend responded with status", res.status);
+
     if (!res.ok) {
       const errText = await res.text();
+      console.log("notify-new-order: Resend error body:", errText);
       return {
         statusCode: 500,
         headers: { "Content-Type": "application/json" },
@@ -66,12 +77,16 @@ exports.handler = async function (event, context) {
       };
     }
 
+    const resData = await res.text();
+    console.log("notify-new-order: Resend success body:", resData);
+
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ success: true }),
     };
   } catch (err) {
+    console.log("notify-new-order: unexpected error:", err.message);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
