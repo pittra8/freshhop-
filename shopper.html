@@ -109,7 +109,7 @@
     container.innerHTML = '<div class="empty">Loading orders…</div>';
     try {
       const ordersRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?order_type=eq.shopping_list&status=in.(confirmed,preparing)&order=created_at.asc`,
+        `${SUPABASE_URL}/rest/v1/orders?order_type=eq.shopping_list&status=in.(confirmed,preparing,awaiting_payment)&order=created_at.asc`,
         { headers }
       );
       if(!ordersRes.ok) throw new Error('failed to load orders');
