@@ -243,6 +243,11 @@
     payLinkBox.style.display = 'none';
     body.appendChild(payLinkBox);
 
+    if(order.status === 'awaiting_payment' && order.payment_link_url){
+      payLinkBox.style.display = 'block';
+      payLinkBox.innerHTML = `Prepay: Send this to the customer and wait for payment before delivering:<br><a href="${order.payment_link_url}" target="_blank">Open payment link</a><br><small>After they pay, click "Check payment & mark for delivery".</small>`;
+    }
+
     const statusMsg = document.createElement('div');
     statusMsg.className = 'status';
 
@@ -258,11 +263,13 @@
     const confirmBtn = document.createElement('button');
     confirmBtn.type = 'button';
     confirmBtn.className = 'btn primary';
-    confirmBtn.textContent = order.status === 'preparing' ? 'Confirm total & mark out for delivery/ready' : 'Start shopping';
-    confirmBtn.addEventListener('click', () => {
-      if(order.status !== 'preparing'){
+    confirmBtn.textContent = order.status === 'preparing' ? 'Confirm total & send payment link' : (order.status === 'awaiting_payment' ? 'Check payment & mark for delivery' : 'Start shopping');
+    confirmBtn.addEventListener('click', async () => {
+      if(order.status === 'awaiting_payment'){
+        await checkPaymentAndDeliver(order, statusMsg, confirmBtn);
+      } else if(order.status !== 'preparing'){
         updateOrderStatus(order, 'preparing', statusMsg);
-        confirmBtn.textContent = 'Confirm total & mark out for delivery/ready';
+        confirmBtn.textContent = 'Confirm total & send payment link';
       } else {
         const total = recalcTotal();
         saveItems(order, itemsWrap, statusMsg, true, total, payLinkBox, confirmBtn);
@@ -294,6 +301,33 @@
     }
   }
 
+  async function checkPaymentAndDeliver(order, statusMsg, confirmBtn){
+    showMsg(statusMsg, 'Checking payment status…', true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}&select=payment_status,payment_link_url`, { headers });
+      if(!res.ok) throw new Error();
+      const rows = await res.json();
+      const paymentStatus = rows[0]?.payment_status;
+      if(paymentStatus === 'paid'){
+        const nextStatus = order.mode === 'pickup' ? 'ready' : 'out_for_delivery';
+        const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+          method: 'PATCH',
+          headers: { ...headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if(!updateRes.ok) throw new Error();
+        order.status = nextStatus;
+        showMsg(statusMsg, `Payment confirmed — marked ${nextStatus.replace(/_/g,' ')}. You can deliver now.`, true);
+        if(confirmBtn){ confirmBtn.disabled = true; }
+        setTimeout(loadOrders, 1500);
+      } else {
+        showMsg(statusMsg, `Not paid yet (status: ${paymentStatus || 'unknown'}). Ask customer to complete the payment link, then check again.`, false);
+      }
+    } catch(err){
+      showMsg(statusMsg, 'Could not check payment. Please try again.', false);
+    }
+  }
+
   async function saveItems(order, itemsWrap, statusMsg, finalizing, total, payLinkBox, confirmBtn){
     const updates = [];
     itemsWrap.querySelectorAll('.item-line').forEach(line => {
@@ -320,15 +354,16 @@
       }
 
       if(finalizing){
-        const nextStatus = order.mode === 'pickup' ? 'ready' : 'out_for_delivery';
+        const nextStatus = 'awaiting_payment';
         const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
           method: 'PATCH',
           headers: { ...headers, 'Prefer': 'return=minimal' },
           body: JSON.stringify({ final_total: total, status: nextStatus })
         });
         if(!orderRes.ok) throw new Error();
+        order.status = nextStatus;
 
-        showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}. Creating payment link…`, true);
+        showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — awaiting payment. Creating payment link…`, true);
         if(confirmBtn){ confirmBtn.disabled = true; }
 
         try {
@@ -342,10 +377,14 @@
           if(linkData.error){
             showMsg(statusMsg, `Order confirmed, but payment link failed: ${linkData.error}`, false);
           } else {
-            showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — marked ${nextStatus.replace(/_/g,' ')}.`, true);
+            showMsg(statusMsg, `Total confirmed at $${total.toFixed(2)} — awaiting payment. Do NOT deliver yet.`, true);
             if(payLinkBox){
               payLinkBox.style.display = 'block';
-              payLinkBox.innerHTML = `Payment link ready — send this to the customer:<br><a href="${linkData.payment_link_url}" target="_blank">Open payment link</a>`;
+              payLinkBox.innerHTML = `Prepay: Send this to the customer and wait for payment before delivering:<br><a href="${linkData.payment_link_url}" target="_blank">Open payment link</a><br><small>After they pay, click "Check payment & mark for delivery".</small>`;
+            }
+            if(confirmBtn){
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = 'Check payment & mark for delivery';
             }
           }
         } catch(linkErr){
