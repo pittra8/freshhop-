@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FreshHop — Your Store Order, Delivered</title>
+<link rel="icon" href="logo.jpg"><title>FreshHop — Your Store Order, Delivered</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
   .wrap{max-width:720px;margin:0 auto;padding:0 20px;}
   header.nav{position:sticky;top:0;background:rgba(247,245,239,.96);border-bottom:1px solid var(--line);z-index:10;}
   .nav-inner{max-width:720px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;}
-  .wordmark{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--leaf-dark);text-decoration:none;}
+  wordmark{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--leaf-dark);text-decoration:none;display:inline-flex;align-items:center;gap:10px;} .wordmark .logo{width:42px;height:42px;border-radius:50%;object-fit:cover;}.
   .nav-links{display:flex;gap:18px;align-items:center;}
   .nav-links a{font-size:14px;color:var(--muted);text-decoration:none;}
   .btn{display:inline-block;padding:12px 22px;border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;border:1px solid var(--leaf);}
@@ -57,12 +57,12 @@
   .cta-box p{color:var(--muted);margin:0 0 24px;}
   .phone-big{font-family:'Fraunces',serif;font-size:26px;color:var(--leaf-dark);text-decoration:none;display:block;margin-top:16px;}
   footer{border-top:1px solid var(--line);padding:24px 0 40px;text-align:center;color:var(--muted);font-size:13.5px;}
-</style>
+.wordmark{display:inline-flex;align-items:center;gap:10px;} .wordmark .logo{width:42px;height:42px;border-radius:50%;object-fit:cover;}</style>
 </head>
 <body>
 <header class="nav">
   <div class="nav-inner">
-    <a class="wordmark" href="#">FreshHop</a>
+    <a class="wordmark" href="#"><img class="logo" src="logo.jpg" alt="FreshHop logo">FreshHop</a>
     <div class="nav-links">
       <a href="#how">How it works</a>
       <a href="#pricing">Pricing</a>
