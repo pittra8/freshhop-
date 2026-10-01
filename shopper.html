@@ -105,13 +105,7 @@
   <div id="orders-container"><div class="empty">Loading orders…</div></div>
 </div>
 <script>
-  const SUPABASE_URL = 'https://samjaswvvtcmldatyncs.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhbWphc3d2dnRjbWxkYXR5bmNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzg5NDgsImV4cCI6MjEwMzYxNDk0OH0.vHDCFyBZkq3rJ5pyBgrSp2MXkqtB6bHof-73JzzC6Yc';
-  const headers = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_KEY,
-    'Content-Type': 'application/json'
-  };
+  const ORDERS_API = '/.netlify/functions/orders';
   const container = document.getElementById('orders-container');
   document.getElementById('new-order-toggle').addEventListener('click', () => {
     document.getElementById('new-order-body').classList.toggle('open');
@@ -121,10 +115,7 @@
   async function loadOrders(){
     container.innerHTML = '<div class="empty">Loading orders…</div>';
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/orders?order_type=eq.shopping_list&status=in.(confirmed,preparing,awaiting_payment)&order=created_at.asc`,
-        { headers }
-      );
+      const res = await fetch(ORDERS_API);
       if(!res.ok) throw new Error('failed to load orders');
       const orders = await res.json();
       if(orders.length === 0){
@@ -134,7 +125,7 @@
       container.innerHTML = '';
       orders.forEach(order => container.appendChild(renderOrderCard(order)));
     } catch(err){
-      container.innerHTML = '<div class="empty">Could not load orders.<br><small>Check your connection and anon key.</small></div>';
+      container.innerHTML = '<div class="empty">Could not load orders.<br><small>Check your connection.</small></div>';
     }
   }
   function actionLabel(order){
@@ -245,9 +236,9 @@
     btn.disabled = true;
     showMsg(statusEl, 'Creating order…', true);
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
+      const res = await fetch(ORDERS_API, {
         method: 'POST',
-        headers: { ...headers, 'Prefer': 'return=representation' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if(!res.ok) throw new Error(await res.text());
@@ -266,9 +257,9 @@
     confirmBtn.disabled = true;
     showMsg(statusMsg, 'Confirming fee…', true);
     try {
-      const orderRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+      const orderRes = await fetch(`${ORDERS_API}?id=${order.id}`, {
         method: 'PATCH',
-        headers: { ...headers, 'Prefer': 'return=minimal' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ final_total: fee, status: 'awaiting_payment' })
       });
       if(!orderRes.ok) throw new Error('order update failed');
@@ -300,15 +291,15 @@
     showMsg(statusMsg, 'Checking payment status…', true);
     confirmBtn.disabled = true;
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}&select=payment_status`, { headers });
+      const res = await fetch(`${ORDERS_API}?id=${order.id}`);
       if(!res.ok) throw new Error();
-      const rows = await res.json();
-      const paymentStatus = rows[0] && rows[0].payment_status;
+      const row = await res.json();
+      const paymentStatus = row && row.payment_status;
       if(paymentStatus === 'paid'){
         const nextStatus = order.mode === 'pickup' ? 'ready' : 'out_for_delivery';
-        const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+        const updateRes = await fetch(`${ORDERS_API}?id=${order.id}`, {
           method: 'PATCH',
-          headers: { ...headers, 'Prefer': 'return=minimal' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: nextStatus })
         });
         if(!updateRes.ok) throw new Error();
