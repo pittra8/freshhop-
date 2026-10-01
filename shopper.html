@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FreshHop — Deliveries</title>
+<link rel="icon" href="logo.jpg"><title>FreshHop — Deliveries</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -67,12 +67,12 @@
   .form-grid label.full{grid-column:1 / -1;}
   .form-grid input,.form-grid select{width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;color:var(--ink);background:#fff;}
   .empty{color:var(--muted);text-align:center;padding:40px 20px;font-size:14px;}
-</style>
+.wordmark{display:inline-flex;align-items:center;gap:10px;} .wordmark .logo{width:42px;height:42px;border-radius:50%;object-fit:cover;}</style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
-    <div class="wordmark">Deliveries</div>
+    <div class="wordmark"><img class="logo" src="logo.jpg" alt="FreshHop logo">Deliveries</div>
     <button class="refresh-btn" id="refresh">Refresh</button>
   </header>
   <div class="order-card">
